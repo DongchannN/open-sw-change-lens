@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "ko-KR"
+
+reviews:
+  profile: "chill"
+
+  instructions: |
+    이 저장소는 오픈소스 개론 과제용 MVP 프로젝트입니다.
+    리뷰는 학습과 협업 시뮬레이션을 돕는 실용적인 피드백에 집중해주세요.
+
+    리뷰 코멘트는 반드시 중요도를 함께 표시해주세요.
+    - [필수] 실행 오류, 데이터 손실, 보안 위험, 요구사항 미충족처럼 merge 전에 수정해야 하는 문제
+    - [권장] 품질, 유지보수성, 가독성을 개선하지만 MVP 제출을 막지는 않는 문제
+    - [참고] 취향 차이, 장기 개선, 지금 범위를 넘어서는 제안
+
+    과도한 리뷰 노이즈는 피해주세요.
+    - 동일한 유형의 사소한 문제는 여러 댓글로 반복하지 말고 하나로 묶어주세요.
+    - 단순 스타일 취향이나 미세 최적화는 중요한 문제가 아니면 언급하지 마세요.
+    - 한 PR에서 핵심 지적은 가능한 한 5개 이하로 제한해주세요.
+    - 과제용 MVP 범위를 넘어서는 구조 변경, 대규모 리팩터링, 영구 DB/로그인/배포 제안은 [참고]로만 다뤄주세요.
+    - 문제가 없으면 억지로 지적하지 말고 "중대한 문제 없음"이라고 말해주세요.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
+    drafts: false
+    base_branches:
+      - "main"
+    ignore_title_keywords:
+      - "WIP"
+      - "[skip review]"
+    labels:
+      - "!do-not-review"
+    ignore_usernames:
+      - "dependabot[bot]"
+      - "github-actions[bot]"
+
+  path_filters:
+    - "!frontend/node_modules/**"
+    - "!frontend/dist/**"
+    - "!backend/__pycache__/**"
+    - "!**/.DS_Store"
+    - "!**/*.lock"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.jpeg"
+    - "!**/*.gif"
+    - "!**/*.ico"
+
+  path_instructions:
+    - path: "backend/**"
+      instructions: |
+        FastAPI 백엔드 코드입니다. 백엔드 리뷰는 다음 기준을 우선으로 해주세요.
+        - 객체지향적인 책임 분리가 되어 있는지 확인해주세요.
+        - 프로젝트 전체의 네이밍, 응답 구조, 예외 처리 방식이 통일되어 있는지 확인해주세요.
+        - 함수와 모듈이 읽기 쉽고, 과제용 MVP에 맞게 단순하게 유지되는지 확인해주세요.
+        - 서버 메모리 FakeDB 사용 범위를 넘는 과한 복잡성이 들어가지 않았는지 확인해주세요.
+        - RSS 요청 실패, 네트워크 오류, 빈 데이터, 중복 저장, 잘못된 ID, 삭제 후 재조회 같은 엣지케이스를 확인해주세요.
+        - 실제 런타임 오류 가능성이 있으면 [필수]로 분류해주세요.
+        - 설계 개선이 있더라도 MVP 제출에 반드시 필요하지 않으면 [권장] 또는 [참고]로 분류해주세요.
+
+    - path: "frontend/**"
+      instructions: |
+        Vue + Vite 프론트엔드 코드입니다. 프론트엔드 리뷰는 사용자가 앱을 안정적으로 이해하고 사용할 수 있는지에 집중해주세요.
+        - 컴포넌트 구조와 상태 흐름이 단순하고 읽기 쉬운지 확인해주세요.
+        - API 로딩, 실패, 빈 목록, 저장 완료, 삭제 후 상태가 화면에 자연스럽게 반영되는지 확인해주세요.
+        - 버튼, 폼, 필터, 링크의 동작이 예측 가능하고 접근 가능한지 확인해주세요.
+        - 반응형 화면에서 텍스트나 버튼이 겹치거나 깨질 가능성이 있는지 확인해주세요.
+        - 백엔드 API 응답 구조와 프론트엔드 사용 방식이 일치하는지 확인해주세요.
+        - CSS나 UI 취향 차이는 실제 사용성 문제가 아니면 댓글을 줄여주세요.
+
+    - path: "docker-compose.yml"
+      instructions: |
+        Docker Compose 실행 구성을 검토해주세요.
+        - README의 실행 방법과 실제 포트, 서비스 이름, 빌드 경로가 일치하는지 확인해주세요.
+        - 과제 평가자가 `docker compose up --build`만으로 실행할 수 있는지 확인해주세요.
+
+    - path: "README.md"
+      instructions: |
+        과제 제출용 README입니다.
+        - 프로젝트 목적, 주요 기능, 기술 스택, 실행 방법이 충분히 설명되어 있는지 확인해주세요.
+        - 개인 과제 예외 상황과 GitHub Flow 기반 협업 시뮬레이션 방식이 명확한지 확인해주세요.
+        - CodeRabbit을 활용한 AI 코드리뷰 방식이 과제 맥락에 맞게 설명되어 있는지 확인해주세요.
