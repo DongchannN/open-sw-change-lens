@@ -5,10 +5,29 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const newsItems = ref([]);
 
 onMounted(async () => {
-  const response = await fetch(`${apiBaseUrl}/api/news`);
-  const data = await response.json();
-  newsItems.value = data.items;
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/news`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch news: ${response.status}`);
+    }
+
+    const data = await response.json();
+    newsItems.value = data.items ?? [];
+  } catch (error) {
+    console.error("뉴스를 불러오지 못했습니다.", error);
+    newsItems.value = [];
+  }
 });
+
+function formatDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(
+    new Date(value),
+  );
+}
 </script>
 
 <template>
@@ -33,7 +52,7 @@ onMounted(async () => {
             {{ item.summary }}
           </p>
           <p v-if="item.published_at" class="news-date">
-            {{ item.published_at }}
+            {{ formatDate(item.published_at) }}
           </p>
         </li>
       </ul>
