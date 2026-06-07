@@ -97,6 +97,9 @@ def fetch_geeknews_items() -> tuple[list[NewsItem], str | None]:
 
     cached_at = datetime.now(UTC)
     with _cache_lock:
+        if not items and _cached_items is not None:
+            return list(_cached_items), _format_cached_at(_cached_at)
+
         _cached_items = items
         _cached_at = cached_at
 
