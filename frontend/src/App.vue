@@ -175,6 +175,10 @@ function openInsightComposer(item) {
     return;
   }
 
+  if (currentState === "error") {
+    setSaveState(item.link, "idle");
+  }
+
   selectedNewsItem.value = item;
   insightDraft.value = {
     impact: "Medium",
@@ -591,12 +595,14 @@ async function deleteSavedInsight(insight) {
   <div
     v-if="isInsightComposerOpen"
     class="modal-backdrop"
-    role="presentation"
   >
     <form
       class="insight-form"
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="insight-form-title"
       @submit.prevent="saveInsight"
+      @keydown.escape="closeInsightComposer"
     >
       <div class="insight-form-header">
         <div>
