@@ -22,4 +22,5 @@ def health_check():
 
 @app.get("/api/news", response_model=NewsResponse)
 def get_news():
-    return NewsResponse(items=fetch_geeknews_items())
+    items, cached_at = fetch_geeknews_items()
+    return NewsResponse(items=items, cached_at=cached_at)

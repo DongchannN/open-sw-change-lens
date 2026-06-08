@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NewsItem(BaseModel):
@@ -9,5 +9,7 @@ class NewsItem(BaseModel):
 
 
 class NewsResponse(BaseModel):
-    items: list[NewsItem]
+    model_config = ConfigDict(populate_by_name=True)
 
+    items: list[NewsItem]
+    cached_at: str | None = Field(default=None, alias="cachedAt")
