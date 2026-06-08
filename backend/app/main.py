@@ -5,7 +5,9 @@ from app.models import InsightCreateRequest, InsightItem, InsightResponse, NewsR
 from app.services.geeknews import fetch_geeknews_items
 from app.services.insights import (
     DuplicateInsightError,
+    InsightNotFoundError,
     create_insight,
+    delete_insight,
     list_insights,
 )
 
@@ -48,4 +50,15 @@ def post_insight(payload: InsightCreateRequest):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Insight already exists for this link",
+        ) from exc
+
+
+@app.delete("/api/insights/{insight_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_saved_insight(insight_id: str):
+    try:
+        delete_insight(insight_id)
+    except InsightNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Insight not found",
         ) from exc
