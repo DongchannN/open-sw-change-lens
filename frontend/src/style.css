@@ -242,6 +242,11 @@ h1 {
   color: #8a2525;
 }
 
+.save-button-error:hover:not(:disabled) {
+  border-color: #b94a4a;
+  color: #7a2222;
+}
+
 .news-summary {
   margin-top: 10px;
   color: #4f5b66;
