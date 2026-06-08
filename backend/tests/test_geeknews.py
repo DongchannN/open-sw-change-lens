@@ -53,8 +53,8 @@ class FetchGeeknewsItemsTest(unittest.TestCase):
             patch(
                 "app.services.geeknews._fetch_geeknews_items_from_rss",
                 side_effect=geeknews.GeekNewsFetchError,
-            ),
-            patch("app.services.geeknews.logger.exception"),
+            ) as fetch_mock,
+            patch("app.services.geeknews.logger.exception") as logger_exception_mock,
             patch("app.services.geeknews.datetime") as datetime_mock,
         ):
             datetime_mock.now.return_value = self.cached_at + timedelta(minutes=10)
@@ -63,14 +63,16 @@ class FetchGeeknewsItemsTest(unittest.TestCase):
 
         self.assertEqual(items, [self.cached_item])
         self.assertEqual(cached_at, "2026-06-07T09:00:00Z")
+        fetch_mock.assert_called_once()
+        logger_exception_mock.assert_called_once()
 
     def test_fetch_geeknews_items_no_cache_on_failure_returns_empty(self):
         with (
             patch(
                 "app.services.geeknews._fetch_geeknews_items_from_rss",
                 side_effect=geeknews.GeekNewsFetchError,
-            ),
-            patch("app.services.geeknews.logger.exception"),
+            ) as fetch_mock,
+            patch("app.services.geeknews.logger.exception") as logger_exception_mock,
             patch("app.services.geeknews.datetime") as datetime_mock,
         ):
             datetime_mock.now.return_value = self.cached_at
@@ -79,13 +81,18 @@ class FetchGeeknewsItemsTest(unittest.TestCase):
 
         self.assertEqual(items, [])
         self.assertIsNone(cached_at)
+        fetch_mock.assert_called_once()
+        logger_exception_mock.assert_called_once()
 
     def test_fetch_geeknews_items_empty_refresh_preserves_stale_cache(self):
         geeknews._cached_items = [self.cached_item]
         geeknews._cached_at = self.cached_at
 
         with (
-            patch("app.services.geeknews._fetch_geeknews_items_from_rss", return_value=[]),
+            patch(
+                "app.services.geeknews._fetch_geeknews_items_from_rss",
+                return_value=[],
+            ) as fetch_mock,
             patch("app.services.geeknews.datetime") as datetime_mock,
         ):
             datetime_mock.now.return_value = self.cached_at + timedelta(minutes=10)
@@ -96,10 +103,14 @@ class FetchGeeknewsItemsTest(unittest.TestCase):
         self.assertEqual(cached_at, "2026-06-07T09:00:00Z")
         self.assertEqual(geeknews._cached_items, [self.cached_item])
         self.assertEqual(geeknews._cached_at, self.cached_at)
+        fetch_mock.assert_called_once()
 
     def test_fetch_geeknews_items_empty_refresh_without_cache_updates_cache(self):
         with (
-            patch("app.services.geeknews._fetch_geeknews_items_from_rss", return_value=[]),
+            patch(
+                "app.services.geeknews._fetch_geeknews_items_from_rss",
+                return_value=[],
+            ) as fetch_mock,
             patch("app.services.geeknews.datetime") as datetime_mock,
         ):
             datetime_mock.now.return_value = self.cached_at
@@ -110,6 +121,7 @@ class FetchGeeknewsItemsTest(unittest.TestCase):
         self.assertEqual(cached_at, "2026-06-07T09:00:00Z")
         self.assertEqual(geeknews._cached_items, [])
         self.assertEqual(geeknews._cached_at, self.cached_at)
+        fetch_mock.assert_called_once()
 
 
 if __name__ == "__main__":
