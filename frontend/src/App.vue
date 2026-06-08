@@ -24,6 +24,7 @@ const isInsightComposerOpen = computed(() => selectedNewsItem.value !== null);
 const isNewsView = computed(() => currentView.value === "news");
 const isMyLensView = computed(() => currentView.value === "myLens");
 const finalSaveStates = ["saved", "duplicate"];
+let savedNewsRequestId = 0;
 
 async function refreshNews() {
   isLoading.value = true;
@@ -48,6 +49,7 @@ async function refreshNews() {
 }
 
 async function refreshSavedNews() {
+  const requestId = ++savedNewsRequestId;
   isSavedNewsLoading.value = true;
   savedNewsErrorMessage.value = "";
 
@@ -58,14 +60,24 @@ async function refreshSavedNews() {
     }
 
     const data = await response.json();
+    if (requestId !== savedNewsRequestId) {
+      return;
+    }
+
     savedNewsItems.value = data.items ?? [];
     syncSaveStatesFromSavedNews();
   } catch (error) {
+    if (requestId !== savedNewsRequestId) {
+      return;
+    }
+
     console.error("내 저장 목록을 불러오지 못했습니다.", error);
     savedNewsErrorMessage.value =
       "내 저장 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
   } finally {
-    isSavedNewsLoading.value = false;
+    if (requestId === savedNewsRequestId) {
+      isSavedNewsLoading.value = false;
+    }
   }
 }
 
