@@ -472,6 +472,7 @@ textarea.field-control {
 }
 
 .primary-button:disabled {
+  border-color: #d8dde3;
   background: #d8dde3;
 }
 
