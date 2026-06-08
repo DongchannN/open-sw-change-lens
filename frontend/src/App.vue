@@ -541,6 +541,7 @@ async function deleteSavedInsight(insight) {
                 :class="{
                   'delete-button-error': getDeleteState(insight) === 'error',
                 }"
+                :aria-label="`저장한 인사이트 삭제: ${insight.title || '제목 없음'}`"
                 :disabled="getDeleteState(insight) === 'deleting'"
                 @click="deleteSavedInsight(insight)"
               >
