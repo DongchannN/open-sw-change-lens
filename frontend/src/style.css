@@ -52,7 +52,8 @@ h1 {
   line-height: 1.7;
 }
 
-.news-section {
+.news-section,
+.insight-section {
   margin-top: 32px;
 }
 
@@ -63,7 +64,8 @@ h1 {
   justify-content: space-between;
 }
 
-.news-section h2 {
+.news-section h2,
+.insight-section h2 {
   font-size: 1.35rem;
   line-height: 1.2;
 }
@@ -166,7 +168,8 @@ h1 {
   font-weight: 700;
 }
 
-.news-list {
+.news-list,
+.insight-list {
   display: grid;
   gap: 12px;
   margin: 18px 0 0;
@@ -174,7 +177,8 @@ h1 {
   list-style: none;
 }
 
-.news-card {
+.news-card,
+.insight-card {
   padding: 18px;
   border: 1px solid #d8dde3;
   border-radius: 8px;
@@ -276,6 +280,28 @@ h1 {
 
 .save-status-error {
   color: #8a2525;
+}
+
+.insight-card {
+  display: grid;
+  gap: 10px;
+}
+
+.insight-card .news-summary,
+.insight-card .news-meta {
+  margin-top: 0;
+}
+
+.impact-badge {
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid #c6d3df;
+  border-radius: 999px;
+  background: #f3f7fb;
+  color: #48617a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 @media (max-width: 560px) {
