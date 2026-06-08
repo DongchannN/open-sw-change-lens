@@ -10,6 +10,7 @@ const insightErrorMessage = ref("");
 const isLoading = ref(false);
 const isInsightLoading = ref(false);
 const saveStates = ref({});
+const deleteStates = ref({});
 const hasNewsItems = computed(() => newsItems.value.length > 0);
 const hasInsightItems = computed(() => insightItems.value.length > 0);
 const finalSaveStates = ["saved", "duplicate"];
@@ -91,11 +92,42 @@ function getSaveState(link) {
   return saveStates.value[link] ?? "idle";
 }
 
+function getInsightId(insight) {
+  return insight.id ?? "";
+}
+
+function getDeleteState(insight) {
+  return deleteStates.value[getInsightId(insight)] ?? "idle";
+}
+
 function setSaveState(link, state) {
   saveStates.value = {
     ...saveStates.value,
     [link]: state,
   };
+}
+
+function setDeleteState(insight, state) {
+  const insightId = getInsightId(insight);
+  if (!insightId) {
+    return;
+  }
+
+  deleteStates.value = {
+    ...deleteStates.value,
+    [insightId]: state,
+  };
+}
+
+function clearDeleteState(insight) {
+  const insightId = getInsightId(insight);
+  if (!insightId) {
+    return;
+  }
+
+  const nextDeleteStates = { ...deleteStates.value };
+  delete nextDeleteStates[insightId];
+  deleteStates.value = nextDeleteStates;
 }
 
 function syncSaveStatesFromInsights() {
@@ -168,6 +200,35 @@ async function saveInsight(item) {
   } catch (error) {
     console.error("관심 뉴스를 저장하지 못했습니다.", error);
     setSaveState(item.link, "error");
+  }
+}
+
+async function deleteSavedInsight(insight) {
+  const insightId = getInsightId(insight);
+  if (!insightId || getDeleteState(insight) === "deleting") {
+    return;
+  }
+
+  setDeleteState(insight, "deleting");
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/insights/${insightId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Failed to delete insight: ${response.status}`);
+    }
+
+    clearDeleteState(insight);
+    insightItems.value = insightItems.value.filter(
+      (item) => getInsightId(item) !== insightId,
+    );
+    syncSaveStatesFromInsights();
+    await refreshInsights();
+  } catch (error) {
+    console.error("저장한 인사이트를 삭제하지 못했습니다.", error);
+    setDeleteState(insight, "error");
   }
 }
 </script>
@@ -424,14 +485,28 @@ async function saveInsight(item) {
             :key="insight.id || getNewsItemKey(insight, index)"
             class="insight-card"
           >
-            <a
-              :href="insight.link"
-              target="_blank"
-              rel="noreferrer"
-              class="news-title"
-            >
-              {{ insight.title }}
-            </a>
+            <div class="insight-card-header">
+              <a
+                :href="insight.link"
+                target="_blank"
+                rel="noreferrer"
+                class="news-title"
+              >
+                {{ insight.title }}
+              </a>
+              <button
+                type="button"
+                class="delete-button"
+                :class="{
+                  'delete-button-error': getDeleteState(insight) === 'error',
+                }"
+                :aria-label="`저장한 인사이트 삭제: ${insight.title || '제목 없음'}`"
+                :disabled="getDeleteState(insight) === 'deleting'"
+                @click="deleteSavedInsight(insight)"
+              >
+                {{ getDeleteState(insight) === "deleting" ? "삭제 중" : "삭제" }}
+              </button>
+            </div>
             <p v-if="insight.summary" class="news-summary">
               {{ insight.summary }}
             </p>
@@ -443,6 +518,13 @@ async function saveInsight(item) {
                 저장 {{ formatDate(insight.createdAt || insight.created_at) }}
               </p>
               <p class="impact-badge">{{ insight.impact }}</p>
+              <p
+                v-if="getDeleteState(insight) === 'error'"
+                class="save-status save-status-error"
+                role="alert"
+              >
+                삭제하지 못했습니다. 다시 시도해 주세요.
+              </p>
             </div>
           </li>
         </ul>
