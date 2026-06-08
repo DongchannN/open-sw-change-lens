@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const newsItems = ref([]);
 const cachedAt = ref("");
 const errorMessage = ref("");
@@ -39,10 +39,19 @@ function formatDate(value) {
     return "";
   }
 
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
   return new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(date);
+}
+
+function getNewsItemKey(item, index) {
+  return item.link || item.id || `${item.title ?? "news"}-${index}`;
 }
 
 function getPublishedAt(item) {
@@ -208,7 +217,11 @@ async function saveInsight(item) {
         </p>
 
         <ul class="news-list">
-          <li v-for="item in newsItems" :key="item.link" class="news-card">
+          <li
+            v-for="(item, index) in newsItems"
+            :key="getNewsItemKey(item, index)"
+            class="news-card"
+          >
             <div class="news-card-header">
               <a
                 :href="item.link"
