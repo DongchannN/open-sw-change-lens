@@ -3,11 +3,15 @@ import { computed, onMounted, ref } from "vue";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 const newsItems = ref([]);
+const insightItems = ref([]);
 const cachedAt = ref("");
 const errorMessage = ref("");
+const insightErrorMessage = ref("");
 const isLoading = ref(false);
+const isInsightLoading = ref(false);
 const saveStates = ref({});
 const hasNewsItems = computed(() => newsItems.value.length > 0);
+const hasInsightItems = computed(() => insightItems.value.length > 0);
 const finalSaveStates = ["saved", "duplicate"];
 
 async function refreshNews() {
@@ -32,7 +36,32 @@ async function refreshNews() {
   }
 }
 
-onMounted(refreshNews);
+async function refreshInsights() {
+  isInsightLoading.value = true;
+  insightErrorMessage.value = "";
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/insights`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch insights: ${response.status}`);
+    }
+
+    const data = await response.json();
+    insightItems.value = data.items ?? [];
+    syncSaveStatesFromInsights();
+  } catch (error) {
+    console.error("저장한 인사이트를 불러오지 못했습니다.", error);
+    insightErrorMessage.value =
+      "저장한 인사이트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  } finally {
+    isInsightLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  refreshNews();
+  refreshInsights();
+});
 
 function formatDate(value) {
   if (!value) {
@@ -67,6 +96,24 @@ function setSaveState(link, state) {
     ...saveStates.value,
     [link]: state,
   };
+}
+
+function syncSaveStatesFromInsights() {
+  const nextSaveStates = {};
+
+  for (const [link, state] of Object.entries(saveStates.value)) {
+    if (state === "saving" || state === "error") {
+      nextSaveStates[link] = state;
+    }
+  }
+
+  for (const insight of insightItems.value) {
+    if (insight.link) {
+      nextSaveStates[insight.link] = "saved";
+    }
+  }
+
+  saveStates.value = nextSaveStates;
 }
 
 function getSaveButtonLabel(item) {
@@ -108,6 +155,7 @@ async function saveInsight(item) {
 
     if (response.status === 409) {
       setSaveState(item.link, "duplicate");
+      await refreshInsights();
       return;
     }
 
@@ -116,6 +164,7 @@ async function saveInsight(item) {
     }
 
     setSaveState(item.link, "saved");
+    await refreshInsights();
   } catch (error) {
     console.error("관심 뉴스를 저장하지 못했습니다.", error);
     setSaveState(item.link, "error");
@@ -278,6 +327,122 @@ async function saveInsight(item) {
               >
                 저장하지 못했습니다. 다시 시도해 주세요.
               </p>
+            </div>
+          </li>
+        </ul>
+      </template>
+    </section>
+
+    <section class="insight-section" aria-labelledby="insight-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="insight-heading">저장한 인사이트</h2>
+          <p class="updated-at">관심 뉴스로 저장한 항목을 모아 봅니다.</p>
+        </div>
+        <button
+          type="button"
+          class="refresh-button"
+          :disabled="isInsightLoading"
+          @click="refreshInsights"
+        >
+          {{ isInsightLoading ? "불러오는 중" : "목록 갱신" }}
+        </button>
+      </div>
+
+      <div
+        v-if="isInsightLoading && !hasInsightItems"
+        class="state-panel"
+        role="status"
+        aria-live="polite"
+      >
+        <p class="state-title">저장한 인사이트를 불러오는 중입니다</p>
+        <p class="state-description">
+          백엔드에 남아 있는 저장 항목을 확인하고 있습니다.
+        </p>
+      </div>
+
+      <div
+        v-else-if="insightErrorMessage && !hasInsightItems"
+        class="state-panel state-panel-error"
+        role="alert"
+        aria-live="assertive"
+      >
+        <p class="state-title">저장 목록을 표시할 수 없습니다</p>
+        <p class="state-description">{{ insightErrorMessage }}</p>
+        <button
+          type="button"
+          class="retry-button"
+          :disabled="isInsightLoading"
+          @click="refreshInsights"
+        >
+          다시 시도
+        </button>
+      </div>
+
+      <div
+        v-else-if="!hasInsightItems"
+        class="state-panel"
+        role="status"
+        aria-live="polite"
+      >
+        <p class="state-title">아직 저장한 인사이트가 없습니다</p>
+        <p class="state-description">
+          최신 기술 뉴스에서 의미 있는 항목을 저장하면 이곳에 표시됩니다.
+        </p>
+      </div>
+
+      <template v-else>
+        <div
+          v-if="insightErrorMessage"
+          class="error-banner"
+          role="alert"
+          aria-live="assertive"
+        >
+          <p>{{ insightErrorMessage }}</p>
+          <button
+            type="button"
+            class="retry-button"
+            :disabled="isInsightLoading"
+            @click="refreshInsights"
+          >
+            다시 시도
+          </button>
+        </div>
+
+        <p
+          v-if="isInsightLoading"
+          class="inline-refresh-status"
+          role="status"
+          aria-live="polite"
+        >
+          저장 목록을 갱신하는 중입니다.
+        </p>
+
+        <ul class="insight-list">
+          <li
+            v-for="(insight, index) in insightItems"
+            :key="insight.id || getNewsItemKey(insight, index)"
+            class="insight-card"
+          >
+            <a
+              :href="insight.link"
+              target="_blank"
+              rel="noreferrer"
+              class="news-title"
+            >
+              {{ insight.title }}
+            </a>
+            <p v-if="insight.summary" class="news-summary">
+              {{ insight.summary }}
+            </p>
+            <div class="news-meta">
+              <p v-if="getPublishedAt(insight)" class="news-date">
+                발행 {{ formatDate(getPublishedAt(insight)) }}
+              </p>
+              <p v-if="insight.createdAt || insight.created_at" class="news-date">
+                저장 {{ formatDate(insight.createdAt || insight.created_at) }}
+              </p>
+              <p class="impact-badge">{{ insight.impact }}</p>
             </div>
           </li>
         </ul>
