@@ -49,3 +49,21 @@ class InsightItem(BaseModel):
 
 class InsightResponse(BaseModel):
     items: list[InsightItem]
+
+
+class SavedNewsItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    title: str
+    link: str
+    summary: str
+    published_at: str | None = Field(default=None, alias="publishedAt")
+    insight: str
+    impact: ImpactLevel
+    action: str
+    saved_at: str = Field(alias="savedAt")
+
+
+class SavedNewsResponse(BaseModel):
+    items: list[SavedNewsItem]

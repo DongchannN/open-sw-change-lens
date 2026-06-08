@@ -2,7 +2,12 @@ import unittest
 
 from fastapi import HTTPException
 
-from app.main import delete_saved_insight, get_insights, post_insight
+from app.main import (
+    delete_saved_insight,
+    get_insights,
+    get_saved_news,
+    post_insight,
+)
 from app.models import InsightCreateRequest
 from app.services.insights import clear_insights
 
@@ -41,6 +46,22 @@ class InsightApiTest(unittest.TestCase):
 
         self.assertEqual(len(response.items), 1)
         self.assertEqual(response.items[0].link, self.payload["link"])
+
+    def test_list_saved_news_with_insight(self):
+        post_insight(InsightCreateRequest(**self.payload))
+
+        response = get_saved_news()
+
+        self.assertEqual(len(response.items), 1)
+        saved_news = response.items[0]
+        self.assertEqual(saved_news.title, self.payload["title"])
+        self.assertEqual(saved_news.link, self.payload["link"])
+        self.assertEqual(saved_news.summary, self.payload["summary"])
+        self.assertEqual(saved_news.published_at, self.payload["publishedAt"])
+        self.assertEqual(saved_news.insight, self.payload["interpretation"])
+        self.assertEqual(saved_news.impact, self.payload["impact"])
+        self.assertEqual(saved_news.action, self.payload["action"])
+        self.assertTrue(saved_news.saved_at.endswith("Z"))
 
     def test_create_insight_rejects_duplicate_link(self):
         post_insight(InsightCreateRequest(**self.payload))

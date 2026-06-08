@@ -1,7 +1,14 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models import InsightCreateRequest, InsightItem, InsightResponse, NewsResponse
+from app.models import (
+    InsightCreateRequest,
+    InsightItem,
+    InsightResponse,
+    NewsResponse,
+    SavedNewsItem,
+    SavedNewsResponse,
+)
 from app.services.geeknews import fetch_geeknews_items
 from app.services.insights import (
     DuplicateInsightError,
@@ -36,6 +43,25 @@ def get_news():
 @app.get("/api/insights", response_model=InsightResponse)
 def get_insights():
     return InsightResponse(items=list_insights())
+
+
+@app.get("/api/saved-news", response_model=SavedNewsResponse)
+def get_saved_news():
+    items = [
+        SavedNewsItem(
+            id=insight.id,
+            title=insight.title,
+            link=insight.link,
+            summary=insight.summary,
+            published_at=insight.published_at,
+            insight=insight.interpretation,
+            impact=insight.impact,
+            action=insight.action,
+            saved_at=insight.created_at,
+        )
+        for insight in list_insights()
+    ]
+    return SavedNewsResponse(items=items)
 
 
 @app.post(
