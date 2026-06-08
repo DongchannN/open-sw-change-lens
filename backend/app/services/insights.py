@@ -59,7 +59,7 @@ def delete_insight(insight_id: str) -> None:
                 del _insights[index]
                 return
 
-    raise InsightNotFoundError("Insight not found")
+        raise InsightNotFoundError("Insight not found")
 
 
 def clear_insights() -> None:

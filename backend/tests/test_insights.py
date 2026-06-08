@@ -69,6 +69,27 @@ class InsightApiTest(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "Insight not found")
 
+    def test_delete_insight_twice_returns_404_on_second_attempt(self):
+        insight = post_insight(InsightCreateRequest(**self.payload))
+
+        delete_saved_insight(insight.id)
+
+        with self.assertRaises(HTTPException) as context:
+            delete_saved_insight(insight.id)
+
+        self.assertEqual(context.exception.status_code, 404)
+
+    def test_delete_insight_removes_only_target_item(self):
+        insight1 = post_insight(InsightCreateRequest(**self.payload))
+        payload2 = {**self.payload, "link": "https://news.hada.io/topic?id=2"}
+        insight2 = post_insight(InsightCreateRequest(**payload2))
+
+        delete_saved_insight(insight1.id)
+
+        remaining = get_insights().items
+        self.assertEqual(len(remaining), 1)
+        self.assertEqual(remaining[0].id, insight2.id)
+
     def test_create_insight_validates_impact(self):
         payload = {**self.payload, "impact": "Critical"}
 
