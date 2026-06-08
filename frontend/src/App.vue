@@ -6,7 +6,9 @@ const newsItems = ref([]);
 const cachedAt = ref("");
 const errorMessage = ref("");
 const isLoading = ref(false);
+const saveStates = ref({});
 const hasNewsItems = computed(() => newsItems.value.length > 0);
+const finalSaveStates = ["saved", "duplicate"];
 
 async function refreshNews() {
   isLoading.value = true;
@@ -41,6 +43,74 @@ function formatDate(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function getPublishedAt(item) {
+  return item.publishedAt ?? item.published_at ?? "";
+}
+
+function getSaveState(link) {
+  return saveStates.value[link] ?? "idle";
+}
+
+function setSaveState(link, state) {
+  saveStates.value = {
+    ...saveStates.value,
+    [link]: state,
+  };
+}
+
+function getSaveButtonLabel(item) {
+  const state = getSaveState(item.link);
+
+  if (state === "saving") {
+    return "저장 중";
+  }
+
+  if (state === "saved" || state === "duplicate") {
+    return "저장됨";
+  }
+
+  return "저장";
+}
+
+async function saveInsight(item) {
+  const currentState = getSaveState(item.link);
+  if (currentState === "saving" || finalSaveStates.includes(currentState)) {
+    return;
+  }
+
+  setSaveState(item.link, "saving");
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/insights`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: item.title,
+        link: item.link,
+        summary: item.summary ?? "",
+        publishedAt: getPublishedAt(item) || null,
+        impact: "Medium",
+      }),
+    });
+
+    if (response.status === 409) {
+      setSaveState(item.link, "duplicate");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to save insight: ${response.status}`);
+    }
+
+    setSaveState(item.link, "saved");
+  } catch (error) {
+    console.error("관심 뉴스를 저장하지 못했습니다.", error);
+    setSaveState(item.link, "error");
+  }
 }
 </script>
 
@@ -139,20 +209,63 @@ function formatDate(value) {
 
         <ul class="news-list">
           <li v-for="item in newsItems" :key="item.link" class="news-card">
-            <a
-              :href="item.link"
-              target="_blank"
-              rel="noreferrer"
-              class="news-title"
-            >
-              {{ item.title }}
-            </a>
+            <div class="news-card-header">
+              <a
+                :href="item.link"
+                target="_blank"
+                rel="noreferrer"
+                class="news-title"
+              >
+                {{ item.title }}
+              </a>
+              <button
+                type="button"
+                class="save-button"
+                :class="{
+                  'save-button-saved':
+                    getSaveState(item.link) === 'saved' ||
+                    getSaveState(item.link) === 'duplicate',
+                  'save-button-error': getSaveState(item.link) === 'error',
+                }"
+                :disabled="
+                  getSaveState(item.link) === 'saving' ||
+                  getSaveState(item.link) === 'saved' ||
+                  getSaveState(item.link) === 'duplicate'
+                "
+                @click="saveInsight(item)"
+              >
+                {{ getSaveButtonLabel(item) }}
+              </button>
+            </div>
             <p v-if="item.summary" class="news-summary">
               {{ item.summary }}
             </p>
-            <p v-if="item.published_at" class="news-date">
-              {{ formatDate(item.published_at) }}
-            </p>
+            <div class="news-meta">
+              <p v-if="getPublishedAt(item)" class="news-date">
+                {{ formatDate(getPublishedAt(item)) }}
+              </p>
+              <p
+                v-if="getSaveState(item.link) === 'saved'"
+                class="save-status"
+                role="status"
+              >
+                관심 뉴스로 저장되었습니다.
+              </p>
+              <p
+                v-else-if="getSaveState(item.link) === 'duplicate'"
+                class="save-status"
+                role="status"
+              >
+                이미 저장된 뉴스입니다.
+              </p>
+              <p
+                v-else-if="getSaveState(item.link) === 'error'"
+                class="save-status save-status-error"
+                role="alert"
+              >
+                저장하지 못했습니다. 다시 시도해 주세요.
+              </p>
+            </div>
           </li>
         </ul>
       </template>
