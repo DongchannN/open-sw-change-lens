@@ -26,6 +26,13 @@ body {
   border-bottom: 1px solid #d8dde3;
 }
 
+.page-header-top {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   color: #48617a;
@@ -79,6 +86,7 @@ h1 {
 .refresh-button,
 .retry-button,
 .delete-button,
+.view-button,
 .secondary-button,
 .primary-button,
 .modal-close-button {
@@ -98,6 +106,7 @@ h1 {
 .refresh-button:hover:not(:disabled),
 .retry-button:hover:not(:disabled),
 .delete-button:hover:not(:disabled),
+.view-button:hover:not(:disabled),
 .secondary-button:hover:not(:disabled),
 .modal-close-button:hover:not(:disabled) {
   border-color: #245b9d;
@@ -107,6 +116,7 @@ h1 {
 .refresh-button:focus-visible,
 .retry-button:focus-visible,
 .delete-button:focus-visible,
+.view-button:focus-visible,
 .secondary-button:focus-visible,
 .primary-button:focus-visible,
 .modal-close-button:focus-visible,
@@ -118,6 +128,7 @@ h1 {
 .refresh-button:disabled,
 .retry-button:disabled,
 .delete-button:disabled,
+.view-button:disabled,
 .secondary-button:disabled,
 .primary-button:disabled,
 .modal-close-button:disabled {
@@ -265,6 +276,11 @@ h1 {
 .save-button-error:hover:not(:disabled) {
   border-color: #b94a4a;
   color: #7a2222;
+}
+
+.view-button {
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 .news-summary {
@@ -486,12 +502,18 @@ textarea.field-control {
     font-size: 2.4rem;
   }
 
+  .page-header-top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .section-header {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .refresh-button {
+  .refresh-button,
+  .view-button {
     width: 100%;
   }
 

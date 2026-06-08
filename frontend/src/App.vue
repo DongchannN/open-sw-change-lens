@@ -9,6 +9,7 @@ const errorMessage = ref("");
 const savedNewsErrorMessage = ref("");
 const isLoading = ref(false);
 const isSavedNewsLoading = ref(false);
+const currentView = ref("news");
 const saveStates = ref({});
 const deleteStates = ref({});
 const selectedNewsItem = ref(null);
@@ -20,6 +21,8 @@ const insightDraft = ref({
 const hasNewsItems = computed(() => newsItems.value.length > 0);
 const hasSavedNewsItems = computed(() => savedNewsItems.value.length > 0);
 const isInsightComposerOpen = computed(() => selectedNewsItem.value !== null);
+const isNewsView = computed(() => currentView.value === "news");
+const isMyLensView = computed(() => currentView.value === "myLens");
 const finalSaveStates = ["saved", "duplicate"];
 
 async function refreshNews() {
@@ -70,6 +73,15 @@ onMounted(() => {
   refreshNews();
   refreshSavedNews();
 });
+
+function showNewsView() {
+  currentView.value = "news";
+}
+
+function showMyLensView() {
+  currentView.value = "myLens";
+  refreshSavedNews();
+}
 
 function formatDate(value) {
   if (!value) {
@@ -281,14 +293,41 @@ async function deleteSavedInsight(insight) {
 <template>
   <main class="app-shell">
     <header class="page-header">
-      <p class="eyebrow">GeekNews Insight Tracker</p>
-      <h1>ChangeLens</h1>
-      <p class="description">
+      <div class="page-header-top">
+        <div>
+          <p class="eyebrow">GeekNews Insight Tracker</p>
+          <h1>ChangeLens</h1>
+        </div>
+        <button
+          v-if="isNewsView"
+          type="button"
+          class="view-button"
+          @click="showMyLensView"
+        >
+          My Lens
+        </button>
+        <button
+          v-else
+          type="button"
+          class="view-button"
+          @click="showNewsView"
+        >
+          최신 뉴스
+        </button>
+      </div>
+      <p v-if="isNewsView" class="description">
         GeekNews 최신 글을 확인하고, 나에게 의미 있는 기술 변화를 기록합니다.
+      </p>
+      <p v-else class="description">
+        저장한 뉴스와 직접 작성한 인사이트를 다시 확인합니다.
       </p>
     </header>
 
-    <section class="news-section" aria-labelledby="news-heading">
+    <section
+      v-if="isNewsView"
+      class="news-section"
+      aria-labelledby="news-heading"
+    >
       <div class="section-header">
         <div>
           <h2 id="news-heading">최신 기술 뉴스</h2>
@@ -439,7 +478,11 @@ async function deleteSavedInsight(insight) {
       </template>
     </section>
 
-    <section class="saved-section" aria-labelledby="saved-heading">
+    <section
+      v-if="isMyLensView"
+      class="saved-section"
+      aria-labelledby="saved-heading"
+    >
       <div class="section-header">
         <div>
           <h2 id="saved-heading">내 저장 목록</h2>
