@@ -12,6 +12,10 @@ class DuplicateInsightError(Exception):
     pass
 
 
+class InsightNotFoundError(Exception):
+    pass
+
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
@@ -44,6 +48,18 @@ def create_insight(payload: InsightCreateRequest) -> InsightItem:
         _insights.append(insight)
 
     return insight
+
+
+def delete_insight(insight_id: str) -> None:
+    global _insights
+
+    with _insight_lock:
+        for index, insight in enumerate(_insights):
+            if insight.id == insight_id:
+                del _insights[index]
+                return
+
+    raise InsightNotFoundError("Insight not found")
 
 
 def clear_insights() -> None:

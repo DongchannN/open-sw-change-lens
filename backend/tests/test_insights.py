@@ -2,7 +2,7 @@ import unittest
 
 from fastapi import HTTPException
 
-from app.main import get_insights, post_insight
+from app.main import delete_saved_insight, get_insights, post_insight
 from app.models import InsightCreateRequest
 from app.services.insights import clear_insights
 
@@ -53,6 +53,21 @@ class InsightApiTest(unittest.TestCase):
             context.exception.detail,
             "Insight already exists for this link",
         )
+
+    def test_delete_insight(self):
+        insight = post_insight(InsightCreateRequest(**self.payload))
+
+        response = delete_saved_insight(insight.id)
+
+        self.assertIsNone(response)
+        self.assertEqual(get_insights().items, [])
+
+    def test_delete_insight_returns_404_when_missing(self):
+        with self.assertRaises(HTTPException) as context:
+            delete_saved_insight("missing-id")
+
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "Insight not found")
 
     def test_create_insight_validates_impact(self):
         payload = {**self.payload, "impact": "Critical"}
