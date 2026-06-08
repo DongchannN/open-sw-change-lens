@@ -11,8 +11,15 @@ const isLoading = ref(false);
 const isInsightLoading = ref(false);
 const saveStates = ref({});
 const deleteStates = ref({});
+const selectedNewsItem = ref(null);
+const insightDraft = ref({
+  impact: "Medium",
+  interpretation: "",
+  action: "",
+});
 const hasNewsItems = computed(() => newsItems.value.length > 0);
 const hasInsightItems = computed(() => insightItems.value.length > 0);
+const isInsightComposerOpen = computed(() => selectedNewsItem.value !== null);
 const finalSaveStates = ["saved", "duplicate"];
 
 async function refreshNews() {
@@ -162,7 +169,41 @@ function getSaveButtonLabel(item) {
   return "저장";
 }
 
-async function saveInsight(item) {
+function openInsightComposer(item) {
+  const currentState = getSaveState(item.link);
+  if (currentState === "saving" || finalSaveStates.includes(currentState)) {
+    return;
+  }
+
+  if (currentState === "error") {
+    setSaveState(item.link, "idle");
+  }
+
+  selectedNewsItem.value = item;
+  insightDraft.value = {
+    impact: "Medium",
+    interpretation: "",
+    action: "",
+  };
+}
+
+function closeInsightComposer() {
+  if (
+    selectedNewsItem.value &&
+    getSaveState(selectedNewsItem.value.link) === "saving"
+  ) {
+    return;
+  }
+
+  selectedNewsItem.value = null;
+}
+
+async function saveInsight() {
+  const item = selectedNewsItem.value;
+  if (!item) {
+    return;
+  }
+
   const currentState = getSaveState(item.link);
   if (currentState === "saving" || finalSaveStates.includes(currentState)) {
     return;
@@ -181,13 +222,16 @@ async function saveInsight(item) {
         link: item.link,
         summary: item.summary ?? "",
         publishedAt: getPublishedAt(item) || null,
-        impact: "Medium",
+        interpretation: insightDraft.value.interpretation.trim(),
+        impact: insightDraft.value.impact,
+        action: insightDraft.value.action.trim(),
       }),
     });
 
     if (response.status === 409) {
       setSaveState(item.link, "duplicate");
       await refreshInsights();
+      closeInsightComposer();
       return;
     }
 
@@ -197,6 +241,7 @@ async function saveInsight(item) {
 
     setSaveState(item.link, "saved");
     await refreshInsights();
+    closeInsightComposer();
   } catch (error) {
     console.error("관심 뉴스를 저장하지 못했습니다.", error);
     setSaveState(item.link, "error");
@@ -355,7 +400,7 @@ async function deleteSavedInsight(insight) {
                   getSaveState(item.link) === 'saved' ||
                   getSaveState(item.link) === 'duplicate'
                 "
-                @click="saveInsight(item)"
+                @click="openInsightComposer(item)"
               >
                 {{ getSaveButtonLabel(item) }}
               </button>
@@ -510,6 +555,19 @@ async function deleteSavedInsight(insight) {
             <p v-if="insight.summary" class="news-summary">
               {{ insight.summary }}
             </p>
+            <dl
+              v-if="insight.interpretation || insight.action"
+              class="insight-detail-list"
+            >
+              <div v-if="insight.interpretation" class="insight-detail">
+                <dt>해석</dt>
+                <dd>{{ insight.interpretation }}</dd>
+              </div>
+              <div v-if="insight.action" class="insight-detail">
+                <dt>다음 행동</dt>
+                <dd>{{ insight.action }}</dd>
+              </div>
+            </dl>
             <div class="news-meta">
               <p v-if="getPublishedAt(insight)" class="news-date">
                 발행 {{ formatDate(getPublishedAt(insight)) }}
@@ -531,4 +589,95 @@ async function deleteSavedInsight(insight) {
       </template>
     </section>
   </main>
+
+  <div
+    v-if="isInsightComposerOpen"
+    class="modal-backdrop"
+  >
+    <form
+      class="insight-form"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="insight-form-title"
+      @submit.prevent="saveInsight"
+      @keydown.escape="closeInsightComposer"
+    >
+      <div class="insight-form-header">
+        <div>
+          <p class="form-eyebrow">관심 뉴스 저장</p>
+          <h2 id="insight-form-title">인사이트 작성</h2>
+        </div>
+        <button
+          type="button"
+          class="modal-close-button"
+          :disabled="getSaveState(selectedNewsItem.link) === 'saving'"
+          aria-label="닫기"
+          @click="closeInsightComposer"
+        >
+          ×
+        </button>
+      </div>
+
+      <p class="form-news-title">{{ selectedNewsItem.title }}</p>
+
+      <label class="field">
+        <span>영향도</span>
+        <select v-model="insightDraft.impact" class="field-control">
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>해석</span>
+        <textarea
+          v-model="insightDraft.interpretation"
+          class="field-control"
+          rows="4"
+          placeholder="이 뉴스가 나에게 어떤 의미인지 적어보세요."
+        />
+      </label>
+
+      <label class="field">
+        <span>다음 행동</span>
+        <textarea
+          v-model="insightDraft.action"
+          class="field-control"
+          rows="3"
+          placeholder="읽고 나서 확인하거나 시도할 일을 적어보세요."
+        />
+      </label>
+
+      <p
+        v-if="getSaveState(selectedNewsItem.link) === 'error'"
+        class="save-status save-status-error"
+        role="alert"
+      >
+        저장하지 못했습니다. 다시 시도해 주세요.
+      </p>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          :disabled="getSaveState(selectedNewsItem.link) === 'saving'"
+          @click="closeInsightComposer"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          class="primary-button"
+          :disabled="getSaveState(selectedNewsItem.link) === 'saving'"
+        >
+          {{
+            getSaveState(selectedNewsItem.link) === "saving"
+              ? "저장 중"
+              : "저장"
+          }}
+        </button>
+      </div>
+    </form>
+  </div>
 </template>
